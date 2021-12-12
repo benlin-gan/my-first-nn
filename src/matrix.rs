@@ -40,6 +40,14 @@ impl Matrix{
 	    data: k,
 	}
     }
+    pub fn as_ket(vec: Vec<f64>) -> Self{
+	Self::as_bra(vec).transpose()
+    }
+    pub fn as_bra(vec: Vec<f64>) -> Self{
+	Self{
+	    data: vec![vec],
+	}
+    }
     pub fn from_outer_product(ket: &Self, bra: &Self) -> Self{
 	let mut k = Matrix::zeroes(ket.rows(), bra.columns());
 	for i in 0..k.rows(){

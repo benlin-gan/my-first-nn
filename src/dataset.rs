@@ -4,7 +4,8 @@ use std::io;
 use std::fmt;
 use std::fmt::Formatter;
 use std::fmt::Error;
-pub fn read() -> io::Result<()>{
+use crate::matrix::Matrix;
+pub fn read() -> io::Result<Vec<(u8, Image)>>{
     let mut i = File::open("train-images-idx3-ubyte")?;
     let mut l = File::open("train-labels-idx1-ubyte")?;
     let mut images = Vec::new();
@@ -13,11 +14,17 @@ pub fn read() -> io::Result<()>{
     l.read_to_end(&mut labels)?;
     println!("{}", images.len());
     println!("{}", labels.len());
-    let first = Image{
-	data: images[16..800].to_vec(),
-    };
-    println!("{}", first);
-    Ok(())
+    let mut dataset = Vec::with_capacity(60000);
+    for i in 0..60000{
+	dataset.push((labels[i + 8], Image::new(&images[i*784+16..i*784+800])));
+    }
+    Ok(dataset)
+}
+pub fn translate(readable: &(u8, Image)) -> (Matrix, Matrix) {
+    let mut one_hot = vec![0.0; 10];
+    one_hot[readable.0 as usize] = 1.0;
+    let mut img = readable.1.data.iter().map(|x| *x as f64).collect();
+    (Matrix::as_ket(img), Matrix::as_ket(one_hot))
 }
 pub struct Image{
     data: Vec<u8>,
