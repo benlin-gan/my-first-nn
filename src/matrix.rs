@@ -1,8 +1,9 @@
+use crate::prng::Xorrng;
 use std::fmt;
 use std::fmt::Formatter;
 use std::fmt::Error;
 #[derive(Debug, PartialEq)]
-struct Matrix{
+pub struct Matrix{
     data: Vec<Vec<f64>>,
 }
 impl fmt::Display for Matrix{
@@ -21,6 +22,20 @@ impl Matrix{
 	let mut k = Vec::with_capacity(rows);
 	for _ in 0..rows{
 	    k.push(vec![0.0; columns]);
+	}
+	Self{
+	    data: k,
+	}
+    }
+    pub fn random(rows: usize, columns: usize, low: f64, high: f64) -> Self{
+	let mut gen = Xorrng::seed(12345);
+	let mut k = Vec::with_capacity(rows);
+	for i in 0..rows{
+	    let mut row = Vec::with_capacity(columns);
+	    for j in 0..columns{
+		row.push(gen.rand_float(low, high));
+	    }
+	    k.push(row);
 	}
 	Self{
 	    data: k,
@@ -74,9 +89,7 @@ mod test{
     use super::*;
     #[test]
     fn identity(){
-	let j = Matrix{
-	    data: vec![vec![0.2, 0.3], vec![3.0, 4.5]],
-	};
+	let j = Matrix::random(2, 2, 0.0, 1.0);
 	let id = Matrix{
 	    data: vec![vec![1.0, 0.0], vec![0.0, 1.0]],
 	};

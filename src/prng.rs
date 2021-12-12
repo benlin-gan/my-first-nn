@@ -1,8 +1,8 @@
-struct Xorrng{
+pub struct Xorrng{
     state: u64,
 }
 impl Xorrng{
-    fn seed(x: u64) -> Self{
+    pub fn seed(x: u64) -> Self{
 	let mut out = Self{
 	    state: x,
 	};
@@ -20,7 +20,7 @@ impl Iterator for Xorrng{
     }
 }
 impl Xorrng{
-    fn rand_float(&mut self, low: f64, high: f64) -> f64{
+    pub fn rand_float(&mut self, low: f64, high: f64) -> f64{
 	let x = (self.next().unwrap() as f64)/(u64::MAX as f64);
 	x * (high - low) + low
     }
