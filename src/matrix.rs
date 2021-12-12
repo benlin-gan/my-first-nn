@@ -142,7 +142,8 @@ mod test{
     use super::*;
     #[test]
     fn identity(){
-	let j = Matrix::random(2, 2, 0.0, 1.0);
+	let mut gen = Xorrng::seed(23432);
+	let j = Matrix::random(2, 2, 0.0, 1.0, &mut gen);
 	let id = Matrix{
 	    data: vec![vec![1.0, 0.0], vec![0.0, 1.0]],
 	};
@@ -161,5 +162,18 @@ mod test{
 	};
 	k.combine_mut(&l, |a, b| a+b);
 	assert_eq!(k, r);
+    }
+    #[test]
+    fn outer(){
+	let k  = Matrix{
+	    data: vec![vec![1.0], vec![2.0], vec![3.0]],
+	};
+	let l = Matrix{
+	    data: vec![vec![1.0, 2.0, 3.0]],
+	};
+	let r = Matrix{
+	    data: vec![vec![1.0, 2.0, 3.0], vec![2.0, 4.0, 6.0], vec![3.0, 6.0, 9.0]],
+	};
+	assert_eq!(r, Matrix::from_outer_product(&k, &l));
     }
 }
