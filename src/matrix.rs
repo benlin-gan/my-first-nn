@@ -34,14 +34,28 @@ impl Matrix{
     fn columns(&self) -> usize{
 	self.data[0].len()
     }
-    fn add(&mut self, other: &Self){
+    fn elementwise_combine<F>(&mut self, other: &Self, binary_function: F)
+    where
+	F: Fn(f64, f64) -> f64
+    {
 	for i in 0..self.rows(){
 	    for j in 0..self.columns(){
-		self.data[i][j] += other.data[i][j];
+		self.data[i][j] = binary_function(self.data[i][j], other.data[i][j]);
 	    }
 	}
     }
-    fn cross(&self, other: &Self) -> Self{
+    fn elementwise_apply<F>(&mut self, unary_function: F)
+    where
+	F: Fn(f64) -> f64
+    {
+	for i in 0..self.rows(){
+	    for j in 0..self.columns(){
+		self.data[i][j] = unary_function(self.data[i][j]);
+	    }
+	}
+    }
+   
+    fn mult(&self, other: &Self) -> Self{
 	let mut k = Self::zeroes(self.rows(), other.columns());
 	for i in 0..self.rows(){
 	    for j in 0..other.columns(){
@@ -55,9 +69,6 @@ impl Matrix{
 	k
     }
 }
-fn main() {
-    
-}
 #[cfg(test)]
 mod test{
     use super::*;
@@ -69,6 +80,20 @@ mod test{
 	let id = Matrix{
 	    data: vec![vec![1.0, 0.0], vec![0.0, 1.0]],
 	};
-	assert_eq!(j.cross(&id), j);
+	assert_eq!(j.mult(&id), j);
+    }
+    #[test]
+    fn addition(){
+	let mut k = Matrix{
+	    data: vec![vec![1.0, 2.0, 3.0], vec![2.0, 3.0, 4.0]]
+	};
+	let l = Matrix{
+	    data: vec![vec![2.0, 3.0, 4.0], vec![3.0, 4.0, 5.0]]
+	};
+	let r = Matrix{
+	    data: vec![vec![3.0, 5.0, 7.0], vec![5.0, 7.0, 9.0]]
+	};
+	k.elementwise_combine(&l, |a, b| a+b);
+	assert_eq!(k, r);
     }
 }
