@@ -27,8 +27,7 @@ impl Matrix{
 	    data: k,
 	}
     }
-    pub fn random(rows: usize, columns: usize, low: f64, high: f64) -> Self{
-	let mut gen = Xorrng::seed(12345);
+    pub fn random(rows: usize, columns: usize, low: f64, high: f64, gen: &mut Xorrng) -> Self{
 	let mut k = Vec::with_capacity(rows);
 	for i in 0..rows{
 	    let mut row = Vec::with_capacity(columns);
