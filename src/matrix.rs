@@ -40,6 +40,15 @@ impl Matrix{
 	    data: k,
 	}
     }
+    pub fn from_outer_product(ket: &Self, bra: &Self) -> Self{
+	let mut k = Matrix::zeroes(ket.rows(), bra.columns());
+	for i in 0..k.rows(){
+	    for j in 0..k.columns(){
+		k.data[i][j] = ket.data[i][0] * bra.data[0][j];
+	    }
+	}
+	k
+    }
 }
 impl Matrix{
     fn rows(&self) -> usize{
@@ -60,7 +69,7 @@ impl Matrix{
 	}
 	k
     }
-    fn combine_mut<F>(&mut self, other: &Self, binary_function: F)
+    pub fn combine_mut<F>(&mut self, other: &Self, binary_function: F)
     where
 	F: Fn(f64, f64) -> f64
     {
@@ -102,6 +111,27 @@ impl Matrix{
 		    acc += self.data[i][k] * other.data[j][k];
 		}
 		k.data[i][j] = acc;
+	    }
+	}
+	k
+    }
+    pub fn to_scalar<F>(&self, binary_function: F) -> f64
+    where
+	F: Fn(f64, f64) -> f64
+    {
+	let mut acc = 0.0;
+	for i in 0..self.rows(){
+	    for j in 0..self.columns(){
+		acc = binary_function(acc, self.data[i][j]);
+	    }
+	}
+	acc
+    }
+    pub fn transpose(&self) -> Self {
+	let mut k = Matrix::zeroes(self.columns(), self.rows());
+	for i in 0..k.rows(){
+	    for j in 0..k.columns(){
+		k.data[i][j] = self.data[j][i];
 	    }
 	}
 	k
