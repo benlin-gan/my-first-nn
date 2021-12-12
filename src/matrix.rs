@@ -29,9 +29,9 @@ impl Matrix{
     }
     pub fn random(rows: usize, columns: usize, low: f64, high: f64, gen: &mut Xorrng) -> Self{
 	let mut k = Vec::with_capacity(rows);
-	for i in 0..rows{
+	for _ in 0..rows{
 	    let mut row = Vec::with_capacity(columns);
-	    for j in 0..columns{
+	    for _ in 0..columns{
 		row.push(gen.rand_float(low, high));
 	    }
 	    k.push(row);
@@ -48,7 +48,19 @@ impl Matrix{
     fn columns(&self) -> usize{
 	self.data[0].len()
     }
-    fn elementwise_combine<F>(&mut self, other: &Self, binary_function: F)
+    pub fn combine<F>(&self, other: &Self, binary_function: F) -> Matrix
+    where
+	F: Fn(f64, f64) -> f64
+    {
+	let mut k = Matrix::zeroes(self.rows(), self.columns());
+	for i in 0..self.rows(){
+	    for j in 0..self.columns(){
+		k.data[i][j] = binary_function(self.data[i][j], other.data[i][j]);
+	    }
+	}
+	k
+    }
+    fn combine_mut<F>(&mut self, other: &Self, binary_function: F)
     where
 	F: Fn(f64, f64) -> f64
     {
@@ -58,7 +70,19 @@ impl Matrix{
 	    }
 	}
     }
-    fn elementwise_apply<F>(&mut self, unary_function: F)
+    pub fn apply<F>(&self, unary_function: F) -> Matrix
+    where
+	F: Fn(f64) -> f64
+    {
+	let mut k = Matrix::zeroes(self.rows(), self.columns());
+	for i in 0..self.rows(){
+	    for j in 0..self.columns(){
+		k.data[i][j] = unary_function(self.data[i][j]);
+	    }
+	}
+	k
+    }
+    fn apply_mut<F>(&mut self, unary_function: F)
     where
 	F: Fn(f64) -> f64
     {
@@ -69,7 +93,7 @@ impl Matrix{
 	}
     }
    
-    fn mult(&self, other: &Self) -> Self{
+    pub fn mult(&self, other: &Self) -> Self{
 	let mut k = Self::zeroes(self.rows(), other.columns());
 	for i in 0..self.rows(){
 	    for j in 0..other.columns(){
@@ -105,7 +129,7 @@ mod test{
 	let r = Matrix{
 	    data: vec![vec![3.0, 5.0, 7.0], vec![5.0, 7.0, 9.0]]
 	};
-	k.elementwise_combine(&l, |a, b| a+b);
+	k.combine_mut(&l, |a, b| a+b);
 	assert_eq!(k, r);
     }
 }

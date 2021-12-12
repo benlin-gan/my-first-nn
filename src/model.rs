@@ -3,6 +3,7 @@ use std::fmt::Error;
 use std::fmt::Formatter;
 use crate::prng::Xorrng;
 use crate::matrix::Matrix;
+use std::f64;
 #[derive(Debug)]
 pub struct Model{
     weights: Vec<Matrix>,
@@ -32,5 +33,15 @@ impl Model{
 	    weights: w,
 	    biases: b,
 	}
+    }
+}
+impl Model{
+    pub fn forward(&self, input: Matrix) -> Vec<Matrix>{
+	let mut weighted_inputs = Vec::with_capacity(self.biases.len());
+	weighted_inputs.push(input.combine(&self.biases[0], |a, b| a + b));
+	for i in 0..self.weights.len(){
+	    weighted_inputs[i + 1] = self.weights[i].mult(&weighted_inputs[i].apply(|x| 1.0/(1.0 + f64::exp(-x)))).combine(&self.biases[i+1], |a, b| a+b);
+	}
+	weighted_inputs
     }
 }
