@@ -8,12 +8,12 @@ use std::fs::File;
 use std::io;
 use std::io::Write;
 use std::io::Read;
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Model{
     pub weights: Vec<Matrix>,
     pub biases: Vec<Matrix>,
 }
-fn logistic(input: f64) -> f64{
+pub fn logistic(input: f64) -> f64{
     1.0/(1.0 + f64::exp(-input))
 }
 fn logistic_deriv(input: f64) -> f64{
@@ -35,10 +35,10 @@ impl Model{
 	let mut w = Vec::with_capacity(arch.len() - 1);
 	let mut b = Vec::with_capacity(arch.len());
 	for i in 0..arch.len() - 1{
-	    b.push(Matrix::random(arch[i], 1, -1.0, 1.0, &mut gen));
-	    w.push(Matrix::random(arch[i+1], arch[i], -1.0, 1.0, &mut gen));
+	    b.push(Matrix::random(arch[i], 1, -0.1, 0.1, &mut gen));
+	    w.push(Matrix::random(arch[i+1], arch[i], -0.1, 0.1, &mut gen));
 	}
-	b.push(Matrix::random(arch[arch.len()-1], 1, -1.0, 1.0, &mut gen));
+	b.push(Matrix::random(arch[arch.len()-1], 1, -0.1, 0.1, &mut gen));
 	Self{
 	    weights: w,
 	    biases: b,
@@ -81,7 +81,7 @@ impl Model{
     }
 }
 impl Model{
-    fn forward(&self, input: Matrix) -> Vec<Matrix>{
+    pub fn forward(&self, input: Matrix) -> Vec<Matrix>{
 	//get the_weighted_inputs ie the vector representing the pre-activation signal to a layer
 	let mut weighted_inputs = Vec::with_capacity(self.biases.len());
 	weighted_inputs.push(input.combine(&self.biases[0], |a, b| a + b));
@@ -104,7 +104,6 @@ impl Model{
 	let final_layer_index = weighted_inputs.len() - 1;
 	weighted_errors[final_layer_index] = Self::output(weighted_inputs).combine(&actual, |a, b| a - b).combine(&weighted_inputs[final_layer_index].apply(logistic_deriv), |a, b| a * b);
 	for i in (0..weighted_errors.len() - 1).rev(){
-	    println!("{}", i);
 	    weighted_errors[i] = self.weights[i].transpose().mult(&weighted_errors[i+1]).unwrap().combine(&weighted_inputs[i].apply(logistic_deriv), |a, b| a * b);
 	}
 	weighted_errors.to_vec()
@@ -117,23 +116,26 @@ impl Model{
 	}
 	weight_deltas
     }
-    pub fn do_one_example(&self, input: Matrix, output: Matrix) -> (Vec<Matrix>, Vec<Matrix>){
+    pub fn do_one_example(&self, input: Matrix, output: Matrix) -> Self{
 	//put all the calculation functions in one function
 	let weighted_inputs = self.forward(input);
 	println!("model output:\n{}", Self::output(&weighted_inputs));
-	println!("answer:\n{}", output.transpose());
+	println!("answer:\n{}", output);
 	println!("cost: {}", Self::cost(Self::output(&weighted_inputs), &output));
 	let weighted_errors = self.backward(&weighted_inputs, output);
 	let weight_deltas = Self::calculate_weight_deltas(&weighted_inputs, &weighted_errors);
-	(weighted_errors, weight_deltas) //goddammit I put weighted_input instead of weighted_errors;
+	Self{
+	    biases: weighted_errors,
+	    weights: weight_deltas,
+	}//goddammit I put weighted_input instead of weighted_errors;
     }
-    pub fn update(&mut self, deltas: (Vec<Matrix>, Vec<Matrix>), learning_rate: f64){
+    pub fn update(&mut self, other: Model, learning_rate: f64){
 	//actually update the state of the model modified by a learning rate	
 	for i in 0..self.biases.len(){
-	    self.biases[i].combine_mut(&deltas.0[i], |a, b|  a - b * learning_rate);
+	    self.biases[i].combine_mut(&other.biases[i], |a, b|  a - b * learning_rate);
 	}
 	for i in 0..self.weights.len(){
-	    self.weights[i].combine_mut(&deltas.1[i], |a, b| a - b * learning_rate);
+	    self.weights[i].combine_mut(&other.weights[i], |a, b| a - b * learning_rate);
 	}
     }
 }

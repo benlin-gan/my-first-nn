@@ -4,7 +4,7 @@ use std::fmt::Formatter;
 use std::fmt::Error;
 #[derive(Debug, PartialEq, Clone)]
 pub struct Matrix{
-    data: Vec<Vec<f64>>,
+    pub data: Vec<Vec<f64>>,
 }
 #[derive(Debug)]
 pub struct DimensionError{
@@ -23,7 +23,7 @@ impl fmt::Display for Matrix{
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), Error>{
 	for i in &self.data{
 	    for j in i{
-		write!(f, "{} ", j)?;
+		write!(f, "{0:.5} ", j)?;
 	    }
 	    writeln!(f)?;
 	}
