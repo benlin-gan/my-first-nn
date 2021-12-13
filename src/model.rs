@@ -53,8 +53,8 @@ impl Model{
 	let mut index = 0;
 	let mut on_bias = true; 
 	while index < buffer.len(){
-	    let mut rows = usize::from_ne_bytes(buffer[index..index+8].try_into().unwrap());
-	    let mut columns = usize::from_ne_bytes(buffer[index+8..index+16].try_into().unwrap());
+	    let rows = usize::from_ne_bytes(buffer[index..index+8].try_into().unwrap());
+	    let columns = usize::from_ne_bytes(buffer[index+8..index+16].try_into().unwrap());
 	    let read_next = rows * columns * 8;
 	    let next_matrix = Matrix::from_bytes(buffer[index..index+16+read_next].to_vec());
 	    if on_bias {
@@ -135,7 +135,7 @@ mod tests{
     #[test]
     fn file(){
 	let k = Model::new(vec![3, 4, 5, 6]);
-	k.to_file("test.mdl".to_string());
+	k.to_file("test.mdl".to_string()).unwrap();
 	let r = Model::from_file("test.mdl".to_string()).unwrap();
 	assert_eq!(k, r);
     }
