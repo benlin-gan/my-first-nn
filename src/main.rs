@@ -3,7 +3,7 @@ use nn::dataset::Image;
 use nn::dataset;
 use std::io;
 fn main(){
-    let mut model = Model::new(vec![784, 16, 10]);
+    let mut model = Model::new(vec![784, 16, 16, 10]);
     let mut starting = 0;
     let d = dataset::read().unwrap();
     loop{
@@ -40,14 +40,14 @@ fn train(starting: &mut usize, d: &Vec<(u8, Image)>, model: &mut Model) -> io::R
 	let index = (i + *starting) % 60000;
 	let pair = dataset::translate(&d[index]);
 	let deltas = model.do_one_example(pair.0, pair.1);
-	model.update(deltas, 0.01);
+	model.update(deltas, 0.001);
 	
     }
     *starting += iterations;
     Ok(())
 }
 fn gen_model(model: &mut Model){
-    *model = Model::new(vec![784, 16, 10]);
+    *model = Model::new(vec![784, 16, 16, 10]);
 }
 fn load_model(model: &mut Model) -> io::Result<()>{
     println!("Please input path to the model");

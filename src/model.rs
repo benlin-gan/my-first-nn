@@ -35,10 +35,10 @@ impl Model{
 	let mut w = Vec::with_capacity(arch.len() - 1);
 	let mut b = Vec::with_capacity(arch.len());
 	for i in 0..arch.len() - 1{
-	    b.push(Matrix::random(arch[i], 1, 0.0, 1.0, &mut gen));
-	    w.push(Matrix::random(arch[i+1], arch[i], 0.0, 1.0, &mut gen));
+	    b.push(Matrix::random(arch[i], 1, -1.0, 1.0, &mut gen));
+	    w.push(Matrix::random(arch[i+1], arch[i], -1.0, 1.0, &mut gen));
 	}
-	b.push(Matrix::random(arch[arch.len()-1], 1, 0.0, 1.0, &mut gen));
+	b.push(Matrix::random(arch[arch.len()-1], 1, -1.0, 1.0, &mut gen));
 	Self{
 	    weights: w,
 	    biases: b,
@@ -93,12 +93,13 @@ impl Model{
 	weighted_inputs[weighted_inputs.len() - 1].apply(logistic)
     }
     fn cost(output: Matrix, actual: &Matrix) -> f64{
-	0.5 * output.combine(&actual, |a, b| a - b).to_scalar(|acc, x| acc + x)
+	0.5 * output.combine(&actual, |a, b| (a - b) * (a - b)).to_scalar(|acc, x| acc + x)
     }
     fn backward(&self, weighted_inputs: &Vec<Matrix>, actual: Matrix) -> Vec<Matrix>{
 	let mut weighted_errors = weighted_inputs.clone(); //hack to allocate the right space;
 	let final_layer_index = weighted_inputs.len() - 1;
 	weighted_errors[final_layer_index] = Self::output(weighted_inputs).combine(&actual, |a, b| a - b).combine(&weighted_inputs[final_layer_index].apply(logistic_deriv), |a, b| a * b);
+	//println!("final_error: {}", weighted_errors[final_layer_index]);
 	for i in (0..weighted_errors.len() - 1).rev(){
 	    weighted_errors[i] = self.weights[i].transpose().mult(&weighted_errors[i+1]).unwrap().combine(&weighted_inputs[i].apply(logistic_deriv), |a, b| a * b);
 	}
@@ -118,15 +119,16 @@ impl Model{
 	println!("cost: {}", Self::cost(Self::output(&weighted_inputs), &output));
 	let weighted_errors = self.backward(&weighted_inputs, output);
 	let weight_deltas = Self::calculate_weight_deltas(&weighted_inputs, &weighted_errors);
-	(weighted_inputs, weight_deltas)
+	(weighted_errors, weight_deltas) //goddammit I put weighted_input instead of weighted_errors;
     }
     pub fn update(&mut self, deltas: (Vec<Matrix>, Vec<Matrix>), learning_rate: f64){
 	for i in 0..self.biases.len(){
-	    self.biases[i].combine_mut(&deltas.0[i], |a, b| a - b * learning_rate);
+	    self.biases[i].combine_mut(&deltas.0[i], |a, b|  a - b * learning_rate);
 	}
 	for i in 0..self.weights.len(){
 	    self.weights[i].combine_mut(&deltas.1[i], |a, b| a - b * learning_rate);
 	}
+	//println!("\nfinal layer bias delta:\n {}", deltas.0[self.biases.len() - 1]);
     }
 }
 #[cfg(test)]
