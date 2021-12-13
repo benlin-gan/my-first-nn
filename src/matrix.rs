@@ -70,6 +70,30 @@ impl Matrix{
 	}
 	k
     }
+    pub fn as_bytes(&self) -> Vec<u8>{
+	//store number of rows, then number of columns, then all the data points in order;
+	let mut k = Vec::new();
+	k.append(&mut self.rows().to_ne_bytes().to_vec());
+	k.append(&mut self.columns().to_ne_bytes().to_vec());
+	for i in 0..self.rows(){
+	    for j in 0..self.columns(){
+		k.append(&mut self.data[i][j].to_ne_bytes().to_vec());
+	    }
+	}
+	k
+    }
+    pub fn from_bytes(bytes: Vec<u8>) -> Self{
+	let rows = usize::from_ne_bytes(bytes[0..8].try_into().unwrap());
+	let columns = usize::from_ne_bytes(bytes[8..16].try_into().unwrap());
+	let mut k = Matrix::zeroes(rows, columns);
+	for i in 0..rows{
+	    for j in 0..columns{
+		let index = i * columns + j;
+		k.data[i][j] = f64::from_ne_bytes(bytes[16+index*8..24+index*8].try_into().unwrap());
+	    }
+	}
+	k
+    }
 }
 impl Matrix{
     pub fn rows(&self) -> usize{
@@ -177,7 +201,7 @@ mod test{
 	let id = Matrix{
 	    data: vec![vec![1.0, 0.0], vec![0.0, 1.0]],
 	};
-	assert_eq!(j.mult(&id), j);
+	assert_eq!(j.mult(&id).unwrap(), j);
     }
     #[test]
     fn addition(){
@@ -205,5 +229,13 @@ mod test{
 	    data: vec![vec![1.0, 2.0, 3.0], vec![2.0, 4.0, 6.0], vec![3.0, 6.0, 9.0]],
 	};
 	assert_eq!(r, Matrix::from_outer_product(&k, &l));
+    }
+    #[test]
+    fn bytes(){
+	let mut gen = Xorrng::seed(2343);
+	let n = Matrix::random(5, 5, 0.0, 1.0, &mut gen);
+	let bytes = n.as_bytes();
+	let m = Matrix::from_bytes(bytes);
+	assert_eq!(m, n);
     }
 }

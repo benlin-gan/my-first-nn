@@ -4,7 +4,11 @@ use std::fmt::Formatter;
 use crate::prng::Xorrng;
 use crate::matrix::Matrix;
 use std::f64;
-#[derive(Debug)]
+use std::fs::File;
+use std::io;
+use std::io::Write;
+use std::io::Read;
+#[derive(Debug, PartialEq)]
 pub struct Model{
     pub weights: Vec<Matrix>,
     pub biases: Vec<Matrix>,
@@ -40,6 +44,41 @@ impl Model{
 	    biases: b,
 	}
     }
+    pub fn from_file(path: String) -> io::Result<Self>{
+	let mut f = File::open(path)?;
+	let mut buffer = Vec::new();
+	f.read_to_end(&mut buffer)?;
+	let mut w = Vec::new();
+	let mut b = Vec::new();
+	let mut index = 0;
+	let mut on_bias = true; 
+	while index < buffer.len(){
+	    let mut rows = usize::from_ne_bytes(buffer[index..index+8].try_into().unwrap());
+	    let mut columns = usize::from_ne_bytes(buffer[index+8..index+16].try_into().unwrap());
+	    let read_next = rows * columns * 8;
+	    let next_matrix = Matrix::from_bytes(buffer[index..index+16+read_next].to_vec());
+	    if on_bias {
+		b.push(next_matrix);
+	    }else{
+		w.push(next_matrix);
+	    }
+	    on_bias = !on_bias;
+	    index = index + 16 + read_next;
+	}
+	Ok(Self{
+	    biases: b,
+	    weights: w,
+	})
+    }
+    pub fn to_file(&self, path: String) ->  io::Result<()>{
+	let mut buffer = File::create(path)?;
+	for i in 0..self.weights.len(){
+	    buffer.write(&self.biases[i].as_bytes())?;
+	    buffer.write(&self.weights[i].as_bytes())?;
+	}
+	buffer.write(&self.biases[self.biases.len() - 1].as_bytes())?;
+	Ok(())
+    }
 }
 impl Model{
     fn forward(&self, input: Matrix) -> Vec<Matrix>{
@@ -74,18 +113,30 @@ impl Model{
     }
     pub fn do_one_example(&self, input: Matrix, output: Matrix) -> (Vec<Matrix>, Vec<Matrix>){
 	let weighted_inputs = self.forward(input);
-	println!("{}", Self::output(&weighted_inputs));
+	println!("model output:\n{}", Self::output(&weighted_inputs));
+	println!("answer:\n{}", output.transpose());
 	println!("cost: {}", Self::cost(Self::output(&weighted_inputs), &output));
 	let weighted_errors = self.backward(&weighted_inputs, output);
 	let weight_deltas = Self::calculate_weight_deltas(&weighted_inputs, &weighted_errors);
 	(weighted_inputs, weight_deltas)
     }
-    pub fn update(&mut self, deltas: (Vec<Matrix>, Vec<Matrix>)){
+    pub fn update(&mut self, deltas: (Vec<Matrix>, Vec<Matrix>), learning_rate: f64){
 	for i in 0..self.biases.len(){
-	    self.biases[i].combine_mut(&deltas.0[i], |a, b| a - b);
+	    self.biases[i].combine_mut(&deltas.0[i], |a, b| a - b * learning_rate);
 	}
 	for i in 0..self.weights.len(){
-	    self.weights[i].combine_mut(&deltas.1[i], |a, b| a - b);
+	    self.weights[i].combine_mut(&deltas.1[i], |a, b| a - b * learning_rate);
 	}
+    }
+}
+#[cfg(test)]
+mod tests{
+    use super::*;
+    #[test]
+    fn file(){
+	let k = Model::new(vec![3, 4, 5, 6]);
+	k.to_file("test.mdl".to_string());
+	let r = Model::from_file("test.mdl".to_string()).unwrap();
+	assert_eq!(k, r);
     }
 }

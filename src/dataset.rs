@@ -23,7 +23,7 @@ pub fn read() -> io::Result<Vec<(u8, Image)>>{
 pub fn translate(readable: &(u8, Image)) -> (Matrix, Matrix) {
     let mut one_hot = vec![0.0; 10];
     one_hot[readable.0 as usize] = 1.0;
-    let mut img = readable.1.data.iter().map(|x| *x as f64).collect();
+    let img = readable.1.data.iter().map(|x| *x as f64).collect();
     (Matrix::as_ket(img), Matrix::as_ket(one_hot))
 }
 pub struct Image{

@@ -5,11 +5,11 @@ fn main(){
     println!("{}", model.biases[0].rows());
     println!("{}", model.biases[1].rows());
     println!("{}", model.biases[2].rows());
-    let mut d = dataset::read().unwrap();
+    let d = dataset::read().unwrap();
     //println!("{:?}", dataset::translate(&d[54333]));
-    for i in 0..100{
+    for i in 0..1000{
 	let pair = dataset::translate(&d[i]);
 	let deltas = model.do_one_example(pair.0, pair.1);
-	model.update(deltas);
+	model.update(deltas, 0.01);
     }
 }
