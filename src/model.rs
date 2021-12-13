@@ -82,6 +82,7 @@ impl Model{
 }
 impl Model{
     fn forward(&self, input: Matrix) -> Vec<Matrix>{
+	//get the_weighted_inputs ie the vector representing the pre-activation signal to a layer
 	let mut weighted_inputs = Vec::with_capacity(self.biases.len());
 	weighted_inputs.push(input.combine(&self.biases[0], |a, b| a + b));
 	for i in 0..self.weights.len(){
@@ -90,22 +91,26 @@ impl Model{
 	weighted_inputs
     }
     fn output(weighted_inputs: &Vec<Matrix>) -> Matrix{
+	//take the final_weighted input and activate it
 	weighted_inputs[weighted_inputs.len() - 1].apply(logistic)
     }
     fn cost(output: Matrix, actual: &Matrix) -> f64{
+	//take the output, and calculate a cost relative to the actual answer
 	0.5 * output.combine(&actual, |a, b| (a - b) * (a - b)).to_scalar(|acc, x| acc + x)
     }
     fn backward(&self, weighted_inputs: &Vec<Matrix>, actual: Matrix) -> Vec<Matrix>{
+	//calculate the partial derivative of the cost function with respect to this layer's weighted_input; 
 	let mut weighted_errors = weighted_inputs.clone(); //hack to allocate the right space;
 	let final_layer_index = weighted_inputs.len() - 1;
 	weighted_errors[final_layer_index] = Self::output(weighted_inputs).combine(&actual, |a, b| a - b).combine(&weighted_inputs[final_layer_index].apply(logistic_deriv), |a, b| a * b);
-	//println!("final_error: {}", weighted_errors[final_layer_index]);
 	for i in (0..weighted_errors.len() - 1).rev(){
+	    println!("{}", i);
 	    weighted_errors[i] = self.weights[i].transpose().mult(&weighted_errors[i+1]).unwrap().combine(&weighted_inputs[i].apply(logistic_deriv), |a, b| a * b);
 	}
 	weighted_errors.to_vec()
     }
     fn calculate_weight_deltas(weighted_inputs: &Vec<Matrix>, weighted_errors: &Vec<Matrix>) -> Vec<Matrix>{
+	//calculate the weight delta based on the weighted_input delta
 	let mut weight_deltas = Vec::with_capacity(weighted_inputs.len() - 1);
 	for i in 0..weighted_inputs.len() - 1{
 	    weight_deltas.push(Matrix::from_outer_product(&weighted_errors[i+1], &weighted_inputs[i].apply(logistic).transpose()));
@@ -113,6 +118,7 @@ impl Model{
 	weight_deltas
     }
     pub fn do_one_example(&self, input: Matrix, output: Matrix) -> (Vec<Matrix>, Vec<Matrix>){
+	//put all the calculation functions in one function
 	let weighted_inputs = self.forward(input);
 	println!("model output:\n{}", Self::output(&weighted_inputs));
 	println!("answer:\n{}", output.transpose());
@@ -122,13 +128,13 @@ impl Model{
 	(weighted_errors, weight_deltas) //goddammit I put weighted_input instead of weighted_errors;
     }
     pub fn update(&mut self, deltas: (Vec<Matrix>, Vec<Matrix>), learning_rate: f64){
+	//actually update the state of the model modified by a learning rate	
 	for i in 0..self.biases.len(){
 	    self.biases[i].combine_mut(&deltas.0[i], |a, b|  a - b * learning_rate);
 	}
 	for i in 0..self.weights.len(){
 	    self.weights[i].combine_mut(&deltas.1[i], |a, b| a - b * learning_rate);
 	}
-	//println!("\nfinal layer bias delta:\n {}", deltas.0[self.biases.len() - 1]);
     }
 }
 #[cfg(test)]

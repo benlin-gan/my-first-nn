@@ -40,7 +40,7 @@ fn train(starting: &mut usize, d: &Vec<(u8, Image)>, model: &mut Model) -> io::R
 	let index = (i + *starting) % 60000;
 	let pair = dataset::translate(&d[index]);
 	let deltas = model.do_one_example(pair.0, pair.1);
-	model.update(deltas, 0.001);
+	model.update(deltas, 0.01);
 	
     }
     *starting += iterations;
