@@ -6,8 +6,8 @@ use crate::matrix::Matrix;
 use std::f64;
 #[derive(Debug)]
 pub struct Model{
-    weights: Vec<Matrix>,
-    biases: Vec<Matrix>,
+    pub weights: Vec<Matrix>,
+    pub biases: Vec<Matrix>,
 }
 fn logistic(input: f64) -> f64{
     1.0/(1.0 + f64::exp(-input))
@@ -46,7 +46,7 @@ impl Model{
 	let mut weighted_inputs = Vec::with_capacity(self.biases.len());
 	weighted_inputs.push(input.combine(&self.biases[0], |a, b| a + b));
 	for i in 0..self.weights.len(){
-	    weighted_inputs[i + 1] = self.weights[i].mult(&weighted_inputs[i].apply(logistic)).combine(&self.biases[i+1], |a, b| a + b);
+	    weighted_inputs.push(self.weights[i].mult(&weighted_inputs[i].apply(logistic)).unwrap().combine(&self.biases[i+1], |a, b| a + b));
 	}
 	weighted_inputs
     }
@@ -57,18 +57,18 @@ impl Model{
 	0.5 * output.combine(&actual, |a, b| a - b).to_scalar(|acc, x| acc + x)
     }
     fn backward(&self, weighted_inputs: &Vec<Matrix>, actual: Matrix) -> Vec<Matrix>{
-	let mut weighted_errors = Vec::with_capacity(weighted_inputs.len());
-	let final_layer_index = weighted_errors.len() - 1;
+	let mut weighted_errors = weighted_inputs.clone(); //hack to allocate the right space;
+	let final_layer_index = weighted_inputs.len() - 1;
 	weighted_errors[final_layer_index] = Self::output(weighted_inputs).combine(&actual, |a, b| a - b).combine(&weighted_inputs[final_layer_index].apply(logistic_deriv), |a, b| a * b);
 	for i in (0..weighted_errors.len() - 1).rev(){
-	    weighted_errors[i] = weighted_errors[i + 1].mult(&self.weights[i].transpose()).combine(&weighted_inputs[i].apply(logistic_deriv), |a, b| a * b);
+	    weighted_errors[i] = self.weights[i].transpose().mult(&weighted_errors[i+1]).unwrap().combine(&weighted_inputs[i].apply(logistic_deriv), |a, b| a * b);
 	}
-	weighted_errors
+	weighted_errors.to_vec()
     }
     fn calculate_weight_deltas(weighted_inputs: &Vec<Matrix>, weighted_errors: &Vec<Matrix>) -> Vec<Matrix>{
 	let mut weight_deltas = Vec::with_capacity(weighted_inputs.len() - 1);
-	for i in 0..weight_deltas.len(){
-	    weight_deltas[i] = Matrix::from_outer_product(&weighted_errors[i+1], &weighted_inputs[i].apply(logistic).transpose());
+	for i in 0..weighted_inputs.len() - 1{
+	    weight_deltas.push(Matrix::from_outer_product(&weighted_errors[i+1], &weighted_inputs[i].apply(logistic).transpose()));
 	}
 	weight_deltas
     }

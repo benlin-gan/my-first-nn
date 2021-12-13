@@ -2,9 +2,22 @@ use crate::prng::Xorrng;
 use std::fmt;
 use std::fmt::Formatter;
 use std::fmt::Error;
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Matrix{
     data: Vec<Vec<f64>>,
+}
+#[derive(Debug)]
+pub struct DimensionError{
+    rows_a: usize,
+    columns_a: usize,
+    rows_b: usize,
+    columns_b: usize,
+}
+impl fmt::Display for DimensionError{
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), Error>{
+	write!(f, "Dimension Error: Cannot multiply matricies of size {}x{} and {}x{}", self.rows_a, self.columns_a, self.rows_b, self.columns_b)?;
+	Ok(())
+    }
 }
 impl fmt::Display for Matrix{
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), Error>{
@@ -18,7 +31,7 @@ impl fmt::Display for Matrix{
     }
 }
 impl Matrix{
-    fn zeroes(rows: usize, columns: usize) -> Self{
+    pub fn zeroes(rows: usize, columns: usize) -> Self{
 	let mut k = Vec::with_capacity(rows);
 	for _ in 0..rows{
 	    k.push(vec![0.0; columns]);
@@ -59,10 +72,10 @@ impl Matrix{
     }
 }
 impl Matrix{
-    fn rows(&self) -> usize{
+    pub fn rows(&self) -> usize{
 	self.data.len()
     }
-    fn columns(&self) -> usize{
+    pub fn columns(&self) -> usize{
 	self.data[0].len()
     }
     pub fn combine<F>(&self, other: &Self, binary_function: F) -> Matrix
@@ -110,18 +123,27 @@ impl Matrix{
 	}
     }
    
-    pub fn mult(&self, other: &Self) -> Self{
+    pub fn mult(&self, other: &Self) -> Result<Self, DimensionError>{
 	let mut k = Self::zeroes(self.rows(), other.columns());
+	//println!("{}x{} {}x{}", self.rows(), self.columns(), other.rows(), other.columns());
+	if self.columns() != other.rows(){
+	    return Err(DimensionError{
+		rows_a: self.rows(),
+		columns_a: self.columns(),
+		rows_b: other.rows(),
+		columns_b: other.columns()
+	    });
+	} 
 	for i in 0..self.rows(){
 	    for j in 0..other.columns(){
 		let mut acc = 0.0;
 		for k in 0..self.columns(){
-		    acc += self.data[i][k] * other.data[j][k];
+		    acc += self.data[i][k] * other.data[k][j];
 		}
 		k.data[i][j] = acc;
 	    }
 	}
-	k
+	Ok(k)
     }
     pub fn to_scalar<F>(&self, binary_function: F) -> f64
     where
