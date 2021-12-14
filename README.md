@@ -1,7 +1,7 @@
-#My First Neural Net
+# My First Neural Net
 I did a project like this before in August of 2021, but I lost all the code when my old laptop got bricked.
 
-##no_hidden_layers.mdl
+## no_hidden_layers.mdl
 
 - Has no hidden layers
 - 784 inputs and 10 outputs
